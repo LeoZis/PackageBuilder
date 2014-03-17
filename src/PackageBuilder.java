@@ -12,7 +12,7 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
- 
+
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Text;
@@ -20,7 +20,7 @@ import org.w3c.dom.Text;
 public class PackageBuilder
  {
 	private static final Map<String, String> extToPackageName;
-	
+
     static
     {
         Map<String, String> tmpMap = new HashMap<String, String>();
@@ -31,94 +31,93 @@ public class PackageBuilder
         tmpMap.put("resource", "StaticResource");
         extToPackageName = Collections.unmodifiableMap(tmpMap);
     }
-    
+
 	private void createXML(Map<String, ArrayList<String>> fileMap, StreamResult result)
 	{
         DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder docBuilder;
 		try {
 			docBuilder = docFactory.newDocumentBuilder();
- 
+
 			Document doc = docBuilder.newDocument();
 			Element root = doc.createElement("Package");
 			doc.appendChild(root);
-			
+
 	        for(String key : fileMap.keySet())
 	        {
 	        	Element types = doc.createElement("types");
 	        	root.appendChild(types);
-	        	
+
 	        	for(String name : fileMap.get(key))
 	        	{
 	        		Element member = doc.createElement("members");
 	        		member.appendChild(doc.createTextNode(name));
 	        		types.appendChild(member);
 	        	}
-	        	
+
 	        	Element name = doc.createElement("name");
-	            name.appendChild(this.getTextNode(key,doc));
+	            name.appendChild(doc.createTextNode(this.getPackageName(key)));
 	        	types.appendChild(name);
 	        }
-	        
+
 	        Element version = doc.createElement("version");
 	        version.appendChild(doc.createTextNode("29.0"));
 	        root.appendChild(version);
-	        
+
 	        TransformerFactory transformerFactory = TransformerFactory.newInstance();
 			Transformer transformer;
-	
+
 			transformer = transformerFactory.newTransformer();
 			DOMSource source = new DOMSource(doc);
 			transformer.transform(source, result);
-		} 
-		catch (ParserConfigurationException e) 
+		}
+		catch (ParserConfigurationException e)
 		{
 			e.printStackTrace();
-		} 
-		catch (TransformerConfigurationException e) 
+		}
+		catch (TransformerConfigurationException e)
 		{
 			e.printStackTrace();
-		} 
-		catch (TransformerException e) 
+		}
+		catch (TransformerException e)
 		{
 			e.printStackTrace();
 		}
 	}
-	
+
 	private void createXML(Map<String, ArrayList<String>> fileMap, File file)
 	{
 		this.createXML(fileMap, new StreamResult(file));
 	}
-	
+
 	private void createXML(Map<String, ArrayList<String>> fileMap, OutputStream stream)
 	{
-		
+
 		this.createXML(fileMap, new StreamResult(stream));
 	}
-	
+
 	private void createXML(Map<String, ArrayList<String>> fileMap)
 	{
 		this.createXML(fileMap, new File("package.xml"));
 	}
-	
-	private Text getTextNode(String name, Document doc)
+
+	private String getPackageName(String name)
 	{
 		if(extToPackageName.containsKey(name))
 		{
-			return doc.createTextNode(extToPackageName.get(name));
+			return extToPackageName.get(name);
 		}
-		
-		return null;
+		return "";
 	}
-	
+
 	private String getFileContents(String fileName)
 	{
 		BufferedReader br;
 		String contents = null;
-		
+
 		if(fileName == null)
 			return null;
-			
+
 		try
 		{
 	    	br = new BufferedReader(new FileReader(fileName));
@@ -131,9 +130,9 @@ public class PackageBuilder
 	            sb.append('\n');
 	            line = br.readLine();
 	        }
-	        
+
 	        br.close();
-	        
+
 	        contents = sb.toString();
 		}
 		catch (IOException e)
@@ -143,30 +142,31 @@ public class PackageBuilder
 		}
 	   return contents;
 	}
-	
+
 	private Map<String, ArrayList<String>> getMapFromContents(String contents)
 	{
 		String[] packageArr = contents.split("\n");
         Map<String, ArrayList<String>> extToFileName = new HashMap<String, ArrayList<String>>();
-        
+
         for(String str : packageArr)
         {
         	int slashIndex = str.lastIndexOf("/");
         	String fileName = str.substring(slashIndex+1, str.length());
-        	
+
         	int dotIndex = str.lastIndexOf(".");
         	String extName = str.substring(dotIndex+1, str.length());
-        	
-        	if(!extToFileName.containsKey(extName))
+
+        	if(!extToFileName.containsKey(extName) && extToPackageName.containsKey(extName))
         	{
         		extToFileName.put(extName, new ArrayList<String>());
         	}
-        	extToFileName.get(extName).add(fileName);
+        	if(extToPackageName.containsKey(extName))
+        		extToFileName.get(extName).add(fileName);
         }
-        
+
         return extToFileName;
 	}
-	
+
 	public static void main(String[] args)
 	{
 		String fromFile = null;
@@ -183,19 +183,19 @@ public class PackageBuilder
 				toFile = args[1];
 			}
 		}
-		
+
 		PackageBuilder pb = new PackageBuilder();
-		
+
 	    String contents = pb.getFileContents(fromFile);
-	    
+
 	    if(contents == null)
 	    {
 	    	System.out.println("Error: Must supply valid file name as argument");
 	    	return;
 	    }
-        
+
 	    Map<String, ArrayList<String>> extToFileName = pb.getMapFromContents(contents);
-        
+
         if(toFile == null)
         {
         	pb.createXML(extToFileName);
@@ -208,5 +208,5 @@ public class PackageBuilder
         {
         	pb.createXML(extToFileName, new File(args[1]));
         }
-    } 
+    }
 }
