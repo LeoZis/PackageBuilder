@@ -3,9 +3,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
@@ -68,6 +70,8 @@ public class PackageBuilder
 			Transformer transformer;
 
 			transformer = transformerFactory.newTransformer();
+			transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+			transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
 			DOMSource source = new DOMSource(doc);
 			transformer.transform(source, result);
 		}
@@ -151,9 +155,9 @@ public class PackageBuilder
         for(String str : packageArr)
         {
         	int slashIndex = str.lastIndexOf("/");
-        	String fileName = str.substring(slashIndex+1, str.length());
-
         	int dotIndex = str.lastIndexOf(".");
+
+        	String fileName = str.substring(slashIndex+1, dotIndex);
         	String extName = str.substring(dotIndex+1, str.length());
 
         	if(!extToFileName.containsKey(extName) && extToPackageName.containsKey(extName))
